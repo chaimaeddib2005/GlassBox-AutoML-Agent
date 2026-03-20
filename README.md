@@ -1,5 +1,8 @@
 GlassBox_AutoML_Agent
-lassbox/
+## Project Structure
+
+```
+glassbox/
 │
 ├── core/
 │   └── stats.py                  # Manual implementations: mean, median, mode,
@@ -59,3 +62,4 @@ lassbox/
 │
 ├── pyproject.toml                # numpy only as dependency
 └── README.md
+```
