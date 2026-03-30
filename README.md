@@ -1,65 +1,85 @@
-GlassBox_AutoML_Agent
-## Project Structure
+# GlassBox-AutoML
+
+A **transparent, scratch-built** Automated Machine Learning library with a **NumPy-only** math core.
+
+## Features
+
+| Module | Contents |
+|--------|----------|
+| **EDA / Inspector** | Mean, median, mode, std, skewness, kurtosis, Pearson matrix, IQR outliers, auto-typing |
+| **Preprocessing** | SimpleImputer, MinMaxScaler, StandardScaler, OneHotEncoder, LabelEncoder |
+| **Models** | LinearRegression, LogisticRegression, DecisionTree, RandomForest, GaussianNaiveBayes, KNearestNeighbors |
+| **Optimization** | GridSearch, RandomSearch, KFoldCV |
+| **Evaluation** | ClassificationMetrics (accuracy, precision, recall, F1, confusion matrix), RegressionMetrics (MAE, MSE, RMSE, R²) |
+| **AutoFit** | End-to-end pipeline: EDA → Cleaning → Model Search → Explainability report |
+
+## Quick Start
+
+```python
+from glassbox import AutoFit
+import numpy as np
+
+# data = numpy array, last column = target
+af = AutoFit(task="classification", target_col=-1, cv=5, time_budget=60)
+report = af.fit(data, feature_names=["age", "income", "credit_score", "approved"])
+
+print(af.explain())
+predictions = af.predict(new_X)
+```
+
+## Installation
+
+```bash
+pip install numpy
+pip install -e .
+```
+
+## Run the demo
+
+```bash
+python examples/autofit_demo.py
+```
+
+## Run all tests
+
+```bash
+python tests/test_utils.py
+python tests/test_preprocessing.py
+python tests/test_models.py
+python tests/test_optimization_eval.py
+```
+
+## Architecture
 
 ```
 glassbox/
-│
-├── core/
-│   └── stats.py                  # Manual implementations: mean, median, mode,
-│                                 # std, skewness, kurtosis, Pearson matrix
-│
+├── autofit.py              # End-to-end AutoML orchestrator
 ├── eda/
-│   └── inspector.py              # Auto-typing, statistical profiling,
-│                                 # IQR outlier detection, collinearity flags
-│
+│   └── inspector.py        # EDA: statistics, correlation, outliers, auto-typing
 ├── preprocessing/
-│   ├── base.py                   # BaseTransformer (fit / transform / fit_transform)
-│   ├── imputer.py                # SimpleImputer — mean/median/mode fill
-│   ├── scaler.py                 # MinMaxScaler, StandardScaler
-│   ├── encoder.py                # OneHotEncoder, LabelEncoder
-│   └── pipeline.py               # Pipeline — chains transformers in order
-│
+│   ├── imputer.py          # SimpleImputer (mean/median/mode)
+│   ├── scalers.py          # MinMaxScaler, StandardScaler
+│   └── encoders.py         # OneHotEncoder, LabelEncoder
 ├── models/
-│   ├── base_model.py             # BaseModel (fit / predict / score)
-│   ├── linear.py                 # LinearRegression, LogisticRegression (gradient descent)
-│   ├── tree.py                   # DecisionTree — Gini impurity / MSE variance reduction
-│   ├── forest.py                 # RandomForest — bagging + feature subspace sampling
-│   ├── naive_bayes.py            # GaussianNB — class-wise mean/variance + Laplace smoothing
-│   └── knn.py                    # KNN — Euclidean / Manhattan, lazy inference
-│
-├── evaluation/
-│   ├── classification.py         # Accuracy, Precision, Recall, F1, Confusion Matrix
-│   └── regression.py             # MAE, MSE, RMSE, R² Score
-│
+│   ├── linear.py           # LinearRegression, LogisticRegression (gradient descent)
+│   ├── tree.py             # DecisionTree (Gini / MSE)
+│   ├── forest.py           # RandomForest (bagging + √features)
+│   ├── naive_bayes.py      # GaussianNaiveBayes (Laplace smoothing)
+│   └── knn.py              # KNearestNeighbors (Euclidean + Manhattan)
 ├── optimization/
-│   ├── cross_validation.py       # K-Fold splitter
-│   ├── grid_search.py            # Exhaustive hyperparameter search
-│   └── random_search.py          # Stochastic search with time budget
-│
-├── agent/
-│   ├── autofit.py                # Top-level orchestrator: EDA → clean → search → report
-│   ├── tool_wrapper.py           # MCP/IronClaw JSON tool interface
-│   └── report.py                 # JSON report builder
-│
-├── deploy/
-│   ├── build_wasm.sh             # Pyodide/MicroPython compile script
-│   └── sandbox_test.js           # Smoke-test in Node WASM runtime
-│
-├── tests/
-│   ├── test_stats.py
-│   ├── test_scalers.py
-│   ├── test_preprocessing.py
-│   ├── test_encoders.py
-│   ├── test_pipeline.py
-│   ├── test_models_simple.py
-│   ├── test_models_trees.py
-│   ├── test_optimization.py
-│   └── test_evaluation.py
-│
-├── benchmarks/
-│   ├── accuracy_vs_sklearn.py    # Validates ≥90% of Scikit-Learn accuracy
-│   └── preprocessing_smoke.py
-│
-├── pyproject.toml                # numpy only as dependency
-└── README.md
+│   ├── search.py           # GridSearch, RandomSearch
+│   └── cross_validation.py # KFoldCV
+└── evaluation/
+    └── metrics.py          # ClassificationMetrics, RegressionMetrics
 ```
+
+## Design Principles
+
+- **Zero heavy dependencies** — only NumPy for all math
+- **White-box** — every model can explain its decisions
+- **WASM-ready** — no C extensions, pure Python + NumPy
+- **Modular** — every transformer implements `fit()`, `transform()`, `fit_transform()`
+
+## License
+
+MIT
