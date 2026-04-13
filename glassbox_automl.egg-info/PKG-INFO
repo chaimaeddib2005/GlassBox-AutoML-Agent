@@ -1,0 +1,109 @@
+Metadata-Version: 2.4
+Name: glassbox-automl
+Version: 1.0.0
+Summary: Transparent, scratch-built AutoML library (NumPy-only core)
+Home-page: https://github.com/chaimaeddib2005/GlassBox-AutoML-Agent
+Author: GlassBox Team
+Author-email: chaimaeddib@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.24
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# GlassBox-AutoML
+
+A **transparent, scratch-built** Automated Machine Learning library with a **NumPy-only** math core.
+
+## Features
+
+| Module | Contents |
+|--------|----------|
+| **EDA / Inspector** | Mean, median, mode, std, skewness, kurtosis, Pearson matrix, IQR outliers, auto-typing |
+| **Preprocessing** | SimpleImputer, MinMaxScaler, StandardScaler, OneHotEncoder, LabelEncoder |
+| **Models** | LinearRegression, LogisticRegression, DecisionTree, RandomForest, GaussianNaiveBayes, KNearestNeighbors |
+| **Optimization** | GridSearch, RandomSearch, KFoldCV |
+| **Evaluation** | ClassificationMetrics (accuracy, precision, recall, F1, confusion matrix), RegressionMetrics (MAE, MSE, RMSE, R²) |
+| **AutoFit** | End-to-end pipeline: EDA → Cleaning → Model Search → Explainability report |
+
+## Quick Start
+
+```python
+from glassbox import AutoFit
+import numpy as np
+
+# data = numpy array, last column = target
+af = AutoFit(task="classification", target_col=-1, cv=5, time_budget=60)
+report = af.fit(data, feature_names=["age", "income", "credit_score", "approved"])
+
+print(af.explain())
+predictions = af.predict(new_X)
+```
+
+## Installation
+
+```bash
+pip install numpy
+pip install -e .
+```
+
+## Run the demo
+
+```bash
+python examples/autofit_demo.py
+```
+
+## Run all tests
+
+```bash
+python tests/test_utils.py
+python tests/test_preprocessing.py
+python tests/test_models.py
+python tests/test_optimization_eval.py
+```
+
+## Architecture
+
+```
+glassbox/
+├── autofit.py              # End-to-end AutoML orchestrator
+├── eda/
+│   └── inspector.py        # EDA: statistics, correlation, outliers, auto-typing
+├── preprocessing/
+│   ├── imputer.py          # SimpleImputer (mean/median/mode)
+│   ├── scalers.py          # MinMaxScaler, StandardScaler
+│   └── encoders.py         # OneHotEncoder, LabelEncoder
+├── models/
+│   ├── linear.py           # LinearRegression, LogisticRegression (gradient descent)
+│   ├── tree.py             # DecisionTree (Gini / MSE)
+│   ├── forest.py           # RandomForest (bagging + √features)
+│   ├── naive_bayes.py      # GaussianNaiveBayes (Laplace smoothing)
+│   └── knn.py              # KNearestNeighbors (Euclidean + Manhattan)
+├── optimization/
+│   ├── search.py           # GridSearch, RandomSearch
+│   └── cross_validation.py # KFoldCV
+└── evaluation/
+    └── metrics.py          # ClassificationMetrics, RegressionMetrics
+```
+
+## Design Principles
+
+- **Zero heavy dependencies** — only NumPy for all math
+- **White-box** — every model can explain its decisions
+- **WASM-ready** — no C extensions, pure Python + NumPy
+- **Modular** — every transformer implements `fit()`, `transform()`, `fit_transform()`
+
+## License
+
+MIT
