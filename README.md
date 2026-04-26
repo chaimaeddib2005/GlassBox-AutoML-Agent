@@ -127,6 +127,7 @@ LLM analyzes and explains results
 ### Run the Agent Locally (Streamlit)
 
 ```bash
+set GEMINI_API_KEY=YOUR_GEMINI_KEY  # which you can get for free on : https://aistudio.google.com
 streamlit run agent/app.py
 ```
 Then:
