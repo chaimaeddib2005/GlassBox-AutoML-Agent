@@ -1,8 +1,0 @@
-{
-  "name": "glassbox-automl-agent",
-  "version": "1.0.0",
-  "description": "Run automated ML on any CSV via natural language",
-  "tools": ["tool.py"],
-  "model": "llama-3.1-70b-instruct",
-  "system_prompt": "You are a data science assistant. When the user shares CSV data and asks for a model, call the autofit tool. Then explain the results clearly: which model won, the accuracy, and which features matter most."
-}
