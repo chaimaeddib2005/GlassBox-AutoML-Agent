@@ -12,17 +12,39 @@ from glassbox.utils import (
 )
 
 
+# def _detect_type(col: np.ndarray) -> str:
+#     """Auto-type a column: 'boolean', 'categorical', or 'numerical'."""
+#     unique = np.unique(col[~_is_nan(col)])
+#     if set(unique).issubset({0, 1, True, False, "0", "1", "true", "false", "True", "False"}):
+#         return "boolean"
+#     try:
+#         col.astype(float)
+#         if len(unique) <= 10 and len(unique) / len(col) < 0.05:
+#             return "categorical"
+#         return "numerical"
+#     except (ValueError, TypeError):
+#         return "categorical"
+
 def _detect_type(col: np.ndarray) -> str:
     """Auto-type a column: 'boolean', 'categorical', or 'numerical'."""
-    unique = np.unique(col[~_is_nan(col)])
-    if set(unique).issubset({0, 1, True, False, "0", "1", "true", "false", "True", "False"}):
-        return "boolean"
+    # Filter out nulls safely without sorting mixed types
+    nan_mask = _is_nan(col)
+    clean = col[~nan_mask]
+    
+    if len(clean) == 0:
+        return "numerical"  # empty column, default
+
+    # Try to convert to float first
     try:
-        col.astype(float)
+        clean_float = clean.astype(float)
+        unique = np.unique(clean_float)  # safe — all floats now
+        if set(unique).issubset({0.0, 1.0}):
+            return "boolean"
         if len(unique) <= 10 and len(unique) / len(col) < 0.05:
             return "categorical"
         return "numerical"
     except (ValueError, TypeError):
+        # Can't convert to float → it's a string column → categorical
         return "categorical"
 
 
@@ -109,7 +131,9 @@ class Inspector:
                 numerical_cols.append(clean)
                 numerical_idx.append(i)
             else:
-                unique_vals, counts = np.unique(col[~nan_mask], return_counts=True)
+                # Convert to strings first to avoid mixed str/float sorting crash
+                clean_col = np.array([str(v) for v in col[~nan_mask]])
+                unique_vals, counts = np.unique(clean_col, return_counts=True)
                 top_idx = np.argmax(counts)
                 report["stats"][name] = {
                     "n_unique":   int(len(unique_vals)),
