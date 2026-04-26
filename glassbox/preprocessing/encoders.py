@@ -57,6 +57,37 @@ class OneHotEncoder:
                 names.append(f"{prefix}_{cat}")
         return names
 
+
+class LabelEncoder:
+    def __init__(self):
+        self.classes_ = None
+        self._class_to_idx = None
+
+    def fit(self, y: np.ndarray) -> "LabelEncoder":
+        # ONLY remove NaN/None, DO NOT convert to string
+        y_clean = np.array([v for v in y if v is not None])
+
+        self.classes_ = np.unique(y_clean)
+        self._class_to_idx = {c: i for i, c in enumerate(self.classes_)}
+        return self
+
+    def transform(self, y: np.ndarray) -> np.ndarray:
+        if self.classes_ is None:
+            raise RuntimeError("Call fit() before transform().")
+
+        return np.array([
+            self._class_to_idx[v] if v in self._class_to_idx else -1
+            for v in y
+        ], dtype=int)
+
+    def fit_transform(self, y: np.ndarray) -> np.ndarray:
+        return self.fit(y).transform(y)
+
+    def inverse_transform(self, y_encoded: np.ndarray) -> np.ndarray:
+        return np.array([
+            self.classes_[int(i)] if 0 <= int(i) < len(self.classes_) else None
+            for i in y_encoded
+        ])
 # import numpy as np
 
 
@@ -106,36 +137,57 @@ class OneHotEncoder:
 #                 names.append(f"{prefix}_{cat}")
 #         return names
 
-class LabelEncoder:
-    def __init__(self):
-        self.classes_ = None
-        self._class_to_idx = None
 
-    def fit(self, y: np.ndarray) -> "LabelEncoder":
-        # Convert everything to string to avoid mixed-type crashes
-        y_str = np.array([str(v) for v in y])
+# ######################""
+# class LabelEncoder:
+#     def __init__(self):
+#         self.classes_ = None
+#         self._class_to_idx = None
+
+#     def fit(self, y: np.ndarray) -> "LabelEncoder":
+#         # Convert everything to string to avoid mixed-type crashes
+#         y_str = np.array([str(v) for v in y])
         
-        self.classes_ = np.unique(y_str)
-        self._class_to_idx = {c: i for i, c in enumerate(self.classes_)}
-        return self
+#         self.classes_ = np.unique(y_str)
+#         self._class_to_idx = {c: i for i, c in enumerate(self.classes_)}
+#         return self
 
-    def transform(self, y: np.ndarray) -> np.ndarray:
-        if self.classes_ is None:
-            raise RuntimeError("Call fit() before transform().")
+#     def transform(self, y: np.ndarray) -> np.ndarray:
+#         if self.classes_ is None:
+#             raise RuntimeError("Call fit() before transform().")
         
-        y_str = np.array([str(v) for v in y])
+#         y_str = np.array([str(v) for v in y])
         
-        return np.array([
-            self._class_to_idx.get(v, -1)  # safe fallback
-            for v in y_str
-        ])
+#         return np.array([
+#             self._class_to_idx.get(v, -1)  # safe fallback
+#             for v in y_str
+#         ])
 
-    def fit_transform(self, y: np.ndarray) -> np.ndarray:
-        return self.fit(y).transform(y)
+#     def fit_transform(self, y: np.ndarray) -> np.ndarray:
+#         return self.fit(y).transform(y)
 
-    def inverse_transform(self, y_encoded: np.ndarray) -> np.ndarray:
-        int_to_class = {i: c for c, i in self._class_to_idx.items()}
-        return np.array([int_to_class.get(int(v), None) for v in y_encoded])
+#     # def inverse_transform(self, y_encoded: np.ndarray) -> np.ndarray:
+#     #     int_to_class = {i: c for c, i in self._class_to_idx.items()}
+#     #     return np.array([int_to_class.get(int(v), None) for v in y_encoded])
+    
+#     def inverse_transform(self, y_encoded: np.ndarray) -> np.ndarray:
+#         int_to_class = {i: c for c, i in self._class_to_idx.items()}
+        
+#         result = []
+#         for v in y_encoded:
+#             val = int_to_class.get(int(v), None)
+            
+#             # try to convert back to number
+#             try:
+#                 val = float(val)
+#                 if val.is_integer():
+#                     val = int(val)
+#             except:
+#                 pass
+                
+#             result.append(val)
+        
+#         return np.array(result)
 
 # class LabelEncoder:
 #     """
