@@ -71,6 +71,80 @@ python tests/test_optimization_eval.py
 
 ---
 
+## MCP + LLM Agent (Pre-IronClaw Interface)
+
+Before integrating IronClaw, we built a standalone **LLM-powered AutoML agent** using MCP (Model Context Protocol) and Gemini, accessible via a Streamlit interface.
+
+This layer allows users to interact with GlassBox using **natural language**, while the system automatically runs the full AutoML pipeline and returns a structured explanation.
+
+### Architecture
+```
+User Prompt
+    ↓
+Streamlit Interface (app.py)
+    ↓
+LLM Agent (Gemini)
+    ↓
+MCP Server (mcp_server.py)
+    ↓
+AutoFit Pipeline (EDA → Preprocessing → Model Search → Evaluation)
+    ↓
+Structured JSON Report
+    ↓
+LLM generates full explanation
+    ↓
+Final Human-Readable ML Report
+```
+
+### Components
+
+**1. Streamlit Interface (`app.py`)**
+- Upload CSV dataset  
+- Enter natural language request  
+- Displays full AI-generated ML report  
+
+**2. LLM Agent (`agent.py`)**
+- Uses Gemini for reasoning  
+- Detects when to call AutoFit  
+- Converts raw JSON output into a structured explanation  
+
+**3. MCP Server (`mcp_server.py`)**
+- Defines the `autofit_tool`  
+- Executes the AutoFit pipeline  
+- Returns a full report (EDA + model results + metrics)  
+
+### Tool Execution Flow
+```
+LLM → decides to call autofit_tool
+        ↓
+MCP Server executes AutoFit
+        ↓
+Returns structured JSON report
+        ↓
+LLM analyzes and explains results
+```
+
+### Run the Agent Locally (Streamlit)
+
+```bash
+streamlit run agent/app.py
+```
+Then:
+- Upload a CSV file
+- Ask: "Build a model to predict Survived"
+- The agent will automatically run the full pipeline and explain results
+
+### Key Idea
+
+This layer separates responsibilities:
+| Component | Role |
+|--------|----------|
+| **LLM** | reasoning + explanation |
+| **MCP Server** | execution |
+| **AutoFit** | machine learning pipeline |
+| **Streamlit** | user interface |
+
+---
 ## IronClaw Agent Integration
 
 GlassBox is designed to work as an **MCP (Model Context Protocol) tool** inside [IronClaw](https://github.com/nearai/ironclaw) — a secure, local AI agent framework. Once registered, the IronClaw agent calls your GlassBox pipeline automatically when a user asks data science questions in natural language.
@@ -354,8 +428,12 @@ glassbox/
     └── metrics.py          # ClassificationMetrics, RegressionMetrics
 
 agent/
-├── tool.py                 # MCP server for IronClaw integration
-└── run_tool.sh             # Environment activation script
+├── agent.py               # LLM Agent (Gemini reasoning + explanation)
+├── mcp_server.py          # MCP tool execution layer (AutoFit bridge)
+├── app.py                 # Streamlit interface (UI)
+├── tool.py                # IronClaw MCP wrapper/server (final integration)
+├── run_tool.sh            # Environment activation script
+      
 ```
 
 ---
