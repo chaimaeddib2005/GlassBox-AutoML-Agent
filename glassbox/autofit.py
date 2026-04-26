@@ -87,6 +87,7 @@ class AutoFit:
         self.imputer_ = None
         self.scaler_ = None
         self.label_enc_ = None
+        self.col_encoders_ = {}   # categorical column encoders keyed by column index
         self.best_model_ = None
         self.best_model_name_ = None
         self.best_score_ = None
@@ -109,6 +110,7 @@ class AutoFit:
     def fit(self, data: np.ndarray, feature_names: list = None) -> dict:
         """
         Run full AutoML pipeline on raw data array.
+        Handles mixed-type data including string/categorical columns automatically.
 
         Parameters
         ----------
@@ -154,14 +156,35 @@ class AutoFit:
         self._log(f"Task detected: {self.task_}")
 
         # ── Preprocessing ─────────────────────────────────────────────────────
-        X = X_raw.copy()
+        # Work on object array so mixed types are preserved per-column
+        X = X_raw.astype(object)
+        self.col_encoders_ = {}
+        dtypes = eda_report.get("dtypes", {})
+
+        for i, fname in enumerate(self.feature_names_):
+            if dtypes.get(fname) in ("categorical", "boolean"):
+                # Encode string/categorical column to integer codes
+                self._log(f"Encoding categorical column '{fname}' …")
+                enc = LabelEncoder()
+                X[:, i] = enc.fit_transform(X[:, i]).astype(float)
+                self.col_encoders_[i] = enc
+            else:
+                # Numerical column — convert to float, encode if conversion fails
+                try:
+                    X[:, i] = X[:, i].astype(float)
+                except (ValueError, TypeError):
+                    self._log(f"Unexpected strings in '{fname}' — encoding as categorical …")
+                    enc = LabelEncoder()
+                    X[:, i] = enc.fit_transform(X[:, i]).astype(float)
+                    self.col_encoders_[i] = enc
+
+        # All columns are now numeric — convert to float array
+        X = X.astype(float)
 
         if self.impute:
             self._log("Imputing missing values …")
             self.imputer_ = SimpleImputer(strategy="mean")
-            X = self.imputer_.fit_transform(X).astype(float)
-        else:
-            X = X.astype(float)
+            X = self.imputer_.fit_transform(X)
 
         if self.scale:
             self._log("Scaling features (StandardScaler) …")
@@ -242,13 +265,23 @@ class AutoFit:
         """Apply the fitted pipeline to new samples."""
         if self.best_model_ is None:
             raise RuntimeError("Call fit() first.")
-        X = X.copy()
+
+        X = X.astype(object)
+
+        # Apply same column encoding as during fit
+        for i, enc in self.col_encoders_.items():
+            try:
+                X[:, i] = enc.transform(X[:, i]).astype(float)
+            except Exception:
+                X[:, i] = 0.0  # fallback for unseen categories
+
+        X = X.astype(float)
+
         if self.imputer_:
-            X = self.imputer_.transform(X).astype(float)
-        else:
-            X = X.astype(float)
+            X = self.imputer_.transform(X)
         if self.scaler_:
             X = self.scaler_.transform(X)
+
         preds = self.best_model_.predict(X)
         if self.task_ == "classification" and self.label_enc_:
             preds = self.label_enc_.inverse_transform(preds.astype(int))

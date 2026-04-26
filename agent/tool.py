@@ -1,38 +1,44 @@
-import json, csv, io
+"""
+GlassBox AutoML — IronClaw MCP Tool (FastMCP)
+"""
+import csv, io, sys
 import numpy as np
-import sys
-sys.path.insert(0, '..')          # finds your glassbox/ package
+from mcp.server.fastmcp import FastMCP
 
+sys.path.insert(0, '/home/chaima-eddib/GlassBox-AutoML-Agent')
 from glassbox import AutoFit
 
-# The agent calls this function when user asks for a model
+mcp = FastMCP("glassbox-automl")
+
+@mcp.tool()
 def autofit(csv_text: str, target_column: str, task: str = "auto") -> str:
     """
-    Parameters
-    ----------
-    csv_text      : the raw CSV the user pasted
-    target_column : the column name to predict
-    task          : 'classification', 'regression', or 'auto'
-    
-    Returns
-    -------
-    A plain-text explanation the agent reads and repeats to the user
+    Run automated machine learning on CSV data.
+    Call this when the user wants to build a model,
+    predict a column, or analyse which features matter most.
     """
-    # 1. Parse CSV into numpy array
-    reader = csv.DictReader(io.StringIO(csv_text))
-    rows = list(reader)
+    try:
+        reader = csv.DictReader(io.StringIO(csv_text.strip()))
+        rows = list(reader)
+    except Exception as e:
+        return f"CSV parse error: {e}"
+
+    if not rows:
+        return "Error: CSV is empty."
+
     headers = list(rows[0].keys())
-    data = [[row[h] for h in headers] for row in rows]
-    data = np.array(data)
-    
-    # 2. Find target column index
     if target_column not in headers:
-        return f"Error: column '{target_column}' not found. Available: {headers}"
+        return f"Column '{target_column}' not found. Available: {', '.join(headers)}"
+
+    data = np.array([[row[h] for h in headers] for row in rows])
     target_idx = headers.index(target_column)
-    
-    # 3. Run your AutoFit pipeline
-    af = AutoFit(task=task, target_col=target_idx, verbose=False)
-    af.fit(data, feature_names=headers)
-    
-    # 4. Return the explanation — agent reads this and tells the user
-    return af.explain()
+
+    try:
+        af = AutoFit(task=task, target_col=target_idx, cv=5, verbose=False)
+        af.fit(data, feature_names=headers)
+        return af.explain()
+    except Exception as e:
+        return f"AutoFit error: {e}"
+
+if __name__ == "__main__":
+    mcp.run(transport="stdio")
